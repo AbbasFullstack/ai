@@ -45,6 +45,8 @@ export function filterTelemetryContent<T>(
     value instanceof RegExp ||
     value instanceof Error ||
     value instanceof Promise ||
+    value instanceof Map ||
+    value instanceof Set ||
     value instanceof ArrayBuffer ||
     ArrayBuffer.isView(value)
   ) {
@@ -52,6 +54,15 @@ export function filterTelemetryContent<T>(
   }
 
   const prototype = Object.getPrototypeOf(value);
+  if (
+    prototype !== Object.prototype &&
+    prototype !== null &&
+    !Object.getOwnPropertyNames(prototype).some(name =>
+      ['text', 'reasoning', 'reasoningText', 'files', 'sources'].includes(name),
+    )
+  ) {
+    return value;
+  }
 
   const result = Object.create(prototype) as Record<string, unknown>;
   seen.set(value as object, result);
