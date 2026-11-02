@@ -108,5 +108,48 @@ describe.runIf(runningOnNode)(
         unsubscribe();
       }
     });
+    it('filters tracing channel results without changing the returned result', async () => {
+      vi.mocked(isNodeRuntime).mockReturnValue(true);
+
+      const observed: Array<Record<string, unknown>> = [];
+      const channel = diagnosticsChannel.tracingChannel(
+        AI_SDK_TELEMETRY_TRACING_CHANNEL,
+      );
+      const subscribers = {
+        start(message: Record<string, unknown>) {
+          observed.push(message);
+        },
+        end() {},
+        asyncStart() {},
+        asyncEnd(message: Record<string, unknown>) {
+          observed.push(message);
+        },
+        error() {},
+      };
+      channel.subscribe(subscribers);
+
+      try {
+        const result = await runWithTracingChannelSpan(
+          {
+            type: 'generateText',
+            event: { messages: [] },
+          },
+          async () => ({ text: 'private reply' }),
+          value => ({ ...value, text: '' }),
+        );
+
+        expect(result).toEqual({ text: 'private reply' });
+        expect(
+          observed.some(
+            message =>
+              (message.result as { text?: string } | undefined)?.text === '',
+          ),
+        ).toBe(true);
+        expect(JSON.stringify(observed)).not.toContain('private reply');
+      } finally {
+        channel.unsubscribe(subscribers);
+      }
+    });
+
   },
 );
