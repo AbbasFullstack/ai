@@ -210,6 +210,7 @@ export function createTelemetryDispatcher({
           event: augmentEvent(event, telemetryMetadata, true),
         },
         completion,
+        filterResult: result => filterTelemetryContent(result, telemetryMetadata),
       }),
 
     onStart: mergeTelemetryCallback('onStart'),
@@ -278,6 +279,7 @@ export function createTelemetryDispatcher({
       return await runWithTracingChannelSpan(
         { type: 'languageModelCall', event: augmentedEvent },
         wrappedExecute,
+        result => filterTelemetryContent(result, telemetryMetadata),
       );
     },
 
