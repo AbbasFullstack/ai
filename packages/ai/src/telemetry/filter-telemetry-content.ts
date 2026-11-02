@@ -31,24 +31,31 @@ export function filterTelemetryContent<T>(
     return result as T;
   }
 
-  // Preserve non-plain objects (e.g. Date, typed arrays, and SDK class
-  // instances). SDK event classes are cloned with their prototype so their
-  // non-sensitive getters continue to work.
-  const prototype = Object.getPrototypeOf(value);
+  // Keep built-ins with internal slots intact. Other objects are cloned with
+  // their prototype so SDK result getters continue to work on filtered data.
   if (
-    prototype !== Object.prototype &&
-    prototype !== null &&
-    !Object.getOwnPropertyNames(prototype).some(name =>
-      ['text', 'reasoning', 'reasoningText', 'files', 'sources'].includes(name),
-    )
+    value instanceof Date ||
+    value instanceof RegExp ||
+    value instanceof Error ||
+    value instanceof Promise ||
+    value instanceof ArrayBuffer ||
+    ArrayBuffer.isView(value)
   ) {
     return value;
   }
 
+  const prototype = Object.getPrototypeOf(value);
+
   const result = Object.create(prototype) as Record<string, unknown>;
   seen.set(value as object, result);
 
-  const inputFields = new Set(['instructions', 'messages', 'prompt', 'input', 'body']);
+  const inputFields = new Set([
+    'instructions',
+    'messages',
+    'prompt',
+    'input',
+    'body',
+  ]);
   const outputFields = new Set([
     'content',
     'text',
@@ -58,14 +65,39 @@ export function filterTelemetryContent<T>(
     'sources',
     'output',
     'body',
+    'messages',
+    '_output',
+    'initialResponseMessages',
+    'responseMessages',
+    'toolCalls',
+    'staticToolCalls',
+    'dynamicToolCalls',
+    'toolResults',
+    'staticToolResults',
+    'dynamicToolResults',
+    'ranking',
   ]);
 
   for (const key of Object.keys(value as object)) {
-    if (recordInputs === false && inputFields.has(key)) {
-      result[key] = key === 'messages' ? [] : undefined;
-    } else if (recordOutputs === false && outputFields.has(key)) {
+    if (
+      (recordInputs === false && inputFields.has(key)) ||
+      (recordOutputs === false && outputFields.has(key))
+    ) {
       result[key] =
-        key === 'content' || key === 'reasoning' || key === 'files' || key === 'sources'
+        key === 'messages' ||
+        key === 'content' ||
+        key === 'reasoning' ||
+        key === 'files' ||
+        key === 'sources' ||
+        key === 'initialResponseMessages' ||
+        key === 'responseMessages' ||
+        key === 'toolCalls' ||
+        key === 'staticToolCalls' ||
+        key === 'dynamicToolCalls' ||
+        key === 'toolResults' ||
+        key === 'staticToolResults' ||
+        key === 'dynamicToolResults' ||
+        key === 'ranking'
           ? []
           : key === 'text'
             ? ''
