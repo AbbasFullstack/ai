@@ -13,6 +13,7 @@ export function filterTelemetryContent<T>(
     recordOutputs?: boolean;
   },
   seen = new WeakMap<object, unknown>(),
+  parentKey?: string,
 ): T {
   if (value == null || typeof value !== 'object') {
     return value;
@@ -26,7 +27,9 @@ export function filterTelemetryContent<T>(
     const result: unknown[] = [];
     seen.set(value, result);
     for (const item of value) {
-      result.push(filterTelemetryContent(item, { recordInputs, recordOutputs }, seen));
+      result.push(
+        filterTelemetryContent(item, { recordInputs, recordOutputs }, seen, parentKey),
+      );
     }
     return result as T;
   }
@@ -65,7 +68,6 @@ export function filterTelemetryContent<T>(
     'sources',
     'output',
     'body',
-    'messages',
     '_output',
     'initialResponseMessages',
     'responseMessages',
@@ -81,7 +83,8 @@ export function filterTelemetryContent<T>(
   for (const key of Object.keys(value as object)) {
     if (
       (recordInputs === false && inputFields.has(key)) ||
-      (recordOutputs === false && outputFields.has(key))
+      (recordOutputs === false &&
+        (outputFields.has(key) || (parentKey === 'response' && key === 'messages')))
     ) {
       result[key] =
         key === 'messages' ||
@@ -107,8 +110,21 @@ export function filterTelemetryContent<T>(
         (value as Record<string, unknown>)[key],
         { recordInputs, recordOutputs },
         seen,
+        key,
       );
     }
+  }
+
+  if (
+    recordOutputs === false &&
+    'output' in (value as object) &&
+    !Object.prototype.hasOwnProperty.call(result, 'output')
+  ) {
+    Object.defineProperty(result, 'output', {
+      value: undefined,
+      enumerable: true,
+      configurable: true,
+    });
   }
 
   return result as T;
