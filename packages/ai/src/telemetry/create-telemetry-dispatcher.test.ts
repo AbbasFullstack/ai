@@ -722,4 +722,46 @@ describe('createTelemetryDispatcher', () => {
       expect(integration.calls).toBe(1);
     });
   });
+  describe('recordInputs and recordOutputs filters', () => {
+    it('redacts prompt and reply content before global integrations receive events', async () => {
+      const onStart = vi.fn();
+      const onEnd = vi.fn();
+      registerTelemetry({ onStart, onEnd });
+
+      const telemetry = createTelemetryDispatcher({
+        telemetry: { recordInputs: false, recordOutputs: false },
+      });
+
+      await telemetry.onStart!({
+        instructions: 'private instructions',
+        messages: [{ role: 'user', content: 'private prompt' }],
+      } as any);
+
+      await telemetry.onEnd!({
+        text: 'private reply',
+        content: [{ type: 'text', text: 'private reply' }],
+      } as any);
+
+      expect(onStart).toHaveBeenCalledWith(
+        expect.objectContaining({
+          instructions: undefined,
+          messages: [],
+          recordInputs: false,
+          recordOutputs: false,
+        }),
+      );
+      expect(onEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: '',
+          content: [],
+          recordInputs: false,
+          recordOutputs: false,
+        }),
+      );
+
+      expect(JSON.stringify(onStart.mock.calls)).not.toContain('private prompt');
+      expect(JSON.stringify(onEnd.mock.calls)).not.toContain('private reply');
+    });
+  });
+
 });
