@@ -66,6 +66,7 @@ function loadBuiltinModule<T>(id: string): T | undefined {
 export async function runWithTracingChannelSpan<T>(
   message: TelemetryTracingChannelMessage,
   execute: () => PromiseLike<T>,
+  filterResult?: (result: T) => T,
 ): Promise<T> {
   const diagnosticsChannel = await loadDiagnosticsChannel();
   const tracingChannel = diagnosticsChannel?.tracingChannel?.(
@@ -93,7 +94,7 @@ export async function runWithTracingChannelSpan<T>(
       result => {
         executionResult = result;
         hasExecutionResult = true;
-        return result;
+        return filterResult == null ? result : filterResult(result);
       },
       error => {
         executionError = error;
@@ -131,9 +132,11 @@ export async function runWithTracingChannelSpan<T>(
 export function openTelemetryChannelSpanContext({
   message,
   completion,
+  filterResult,
 }: {
   message: TelemetryTracingChannelMessage;
   completion: PromiseLike<unknown>;
+  filterResult?: (result: unknown) => unknown;
 }): TracingChannelContext | undefined {
   if (!isNodeRuntime()) {
     Promise.resolve(completion).catch(() => {});
@@ -191,7 +194,7 @@ export function openTelemetryChannelSpanContext({
     }
 
     if (result !== undefined) {
-      context.result = result;
+      context.result = filterResult == null ? result : filterResult(result);
     }
 
     safePublish(() => tracingChannel.asyncEnd.publish(context));
