@@ -107,7 +107,14 @@ export async function runWithTracingChannelSpan<T>(
   };
 
   try {
-    return await tracingChannel.tracePromise(tracedExecute, message);
+    await tracingChannel.tracePromise(tracedExecute, message);
+    if (hasExecutionResult) {
+      return executionResult as T;
+    }
+    if (executePromise != null) {
+      return await executePromise;
+    }
+    return await execute();
   } catch {
     if (hasExecutionError) {
       throw executionError;
