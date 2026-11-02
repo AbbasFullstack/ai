@@ -17,7 +17,6 @@ import {
   runWithTracingChannelSpan,
 } from './tracing-channel-publisher';
 import { getGlobalTelemetryIntegrations } from './telemetry-registry';
-import { filterTelemetryContent } from './filter-telemetry-content';
 import type { TelemetryOptions } from './telemetry-options';
 
 /**
@@ -101,7 +100,7 @@ function augmentEvent<EVENT>(
     }
   }
 
-  return filterTelemetryContent(augmentedEvent, telemetry);
+  return augmentedEvent;
 }
 
 /**
@@ -200,7 +199,6 @@ export function createTelemetryDispatcher({
           event: augmentEvent(event, telemetryMetadata, true),
         },
         execute,
-        result => filterTelemetryContent(result, telemetryMetadata),
       ),
 
     startTracingChannelContext: ({ type, event, completion }) =>
@@ -210,7 +208,6 @@ export function createTelemetryDispatcher({
           event: augmentEvent(event, telemetryMetadata, true),
         },
         completion,
-        filterResult: result => filterTelemetryContent(result, telemetryMetadata),
       }),
 
     onStart: mergeTelemetryCallback('onStart'),
@@ -279,7 +276,6 @@ export function createTelemetryDispatcher({
       return await runWithTracingChannelSpan(
         { type: 'languageModelCall', event: augmentedEvent },
         wrappedExecute,
-        result => filterTelemetryContent(result, telemetryMetadata),
       );
     },
 
