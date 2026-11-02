@@ -17,6 +17,7 @@ import {
   runWithTracingChannelSpan,
 } from './tracing-channel-publisher';
 import { getGlobalTelemetryIntegrations } from './telemetry-registry';
+import { filterTelemetryContent } from './filter-telemetry-content';
 import type { TelemetryOptions } from './telemetry-options';
 
 /**
@@ -100,7 +101,7 @@ function augmentEvent<EVENT>(
     }
   }
 
-  return augmentedEvent;
+  return filterTelemetryContent(augmentedEvent, telemetry);
 }
 
 /**
@@ -199,6 +200,7 @@ export function createTelemetryDispatcher({
           event: augmentEvent(event, telemetryMetadata, true),
         },
         execute,
+        result => filterTelemetryContent(result, telemetryMetadata),
       ),
 
     startTracingChannelContext: ({ type, event, completion }) =>
