@@ -79,24 +79,5 @@ export function filterTelemetryContent<T>(
     }
   }
 
-  // StepResult exposes generated text through prototype getters. Define
-  // sanitized own properties so those getters cannot reconstruct hidden data.
-  if (recordOutputs === false) {
-    for (const key of ['text', 'reasoning', 'reasoningText', 'files', 'sources']) {
-      if (key in (value as object) && !(key in result)) {
-        Object.defineProperty(result, key, {
-          value:
-            key === 'text'
-              ? ''
-              : key === 'reasoning' || key === 'files' || key === 'sources'
-                ? []
-                : undefined,
-          enumerable: true,
-          configurable: true,
-        });
-      }
-    }
-  }
-
   return result as T;
 }
