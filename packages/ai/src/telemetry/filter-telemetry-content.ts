@@ -15,7 +15,11 @@ export function filterTelemetryContent<T>(
   seen = new WeakMap<object, unknown>(),
   parentKey?: string,
 ): T {
-  if (value == null || typeof value !== 'object') {
+  if (
+    value == null ||
+    typeof value !== 'object' ||
+    (recordInputs !== false && recordOutputs !== false)
+  ) {
     return value;
   }
 
@@ -105,6 +109,10 @@ export function filterTelemetryContent<T>(
           : key === 'text'
             ? ''
             : undefined;
+    } else if (key === 'runtimeContext' || key === 'toolsContext' || key === 'toolContext') {
+      // These contexts have their own explicit inclusion filters. Keep their
+      // identity and avoid traversing user-defined context objects here.
+      result[key] = (value as Record<string, unknown>)[key];
     } else {
       result[key] = filterTelemetryContent(
         (value as Record<string, unknown>)[key],
