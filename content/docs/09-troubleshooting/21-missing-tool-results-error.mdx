@@ -40,11 +40,11 @@ const messages = [
         type: 'tool-call',
         toolCallId: 'call_123',
         toolName: 'getWeather',
-        args: { location: 'New York' },
+        input: { location: 'New York' },
       },
     ],
   },
-  // You MUST include this tool message with the result:
+  // You MUST include this tool message with the tool result:
   {
     role: 'tool',
     content: [
@@ -52,7 +52,7 @@ const messages = [
         type: 'tool-result',
         toolCallId: 'call_123',
         toolName: 'getWeather',
-        result: 'Sunny, 25°C',
+        output: { type: 'text', value: 'Sunny, 25°C' },
       },
     ],
   },
